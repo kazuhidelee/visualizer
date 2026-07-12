@@ -1,5 +1,5 @@
 import type { Commit, JsonObject } from "@/lib/types"
-import type { RepositoryInfo } from "@/lib/repository-handler"
+import type { RepositoryInfo } from "@/lib/types"
 
 export interface DemoPolicyGraphNode {
   id: string

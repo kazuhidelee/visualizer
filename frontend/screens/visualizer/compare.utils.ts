@@ -192,9 +192,9 @@ export function buildComparisonResult(
     });
 
   const changedMetadata = [
-    trustSetupChanged ? "Trust setup" : null,
+    trustSetupChanged ? "Approval thresholds" : null,
     fileRulesChanged ? "File rules" : null,
-    rootMetadataChanged ? "Root metadata" : null,
+    rootMetadataChanged ? "Authorized principals" : null,
   ].filter((item): item is string => Boolean(item));
 
   return {

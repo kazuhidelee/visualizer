@@ -14,7 +14,7 @@ intended for aiding development.
   - Lists commits
   - Fetches and decodes gittuf metadata blobs (e.g., metadata/root.json,
     metadata/targets.json)
-  - `go-backend/` Go (Gin) — default port 5000 (configurable via `PORT`)
+  - `go-backend/` Go (Gin) — default port 8080 (configurable via `PORT`)
 
 ## Backend API
 
@@ -69,6 +69,9 @@ Notes:
 - CORS
   - Go backend: default allowed origins include `http://localhost:3000` and
     `http://localhost:5173`. Update in `cmd/server/main.go` if needed.
+- Frontend API base URL
+  - Set `NEXT_PUBLIC_API_BASE_URL` to point the frontend at the backend.
+  - Default local value is `http://localhost:8080`.
 
 ## Development scripts
 

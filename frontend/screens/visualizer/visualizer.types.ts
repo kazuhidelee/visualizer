@@ -1,5 +1,9 @@
 import type { StaticImageData } from "next/image";
-import type { RepositoryInfo } from "@/lib/repository-handler";
+import type {
+  RepositoryInfo,
+  RepositoryWorkspaceState,
+  WorkspaceMode,
+} from "@/lib/types";
 import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
 
 export type WorkspacePanelId =
@@ -11,9 +15,22 @@ export type WorkspacePanelId =
   | "settings";
 
 export interface VisualizerWorkspaceProps {
+  mode: WorkspaceMode;
   repository: RepositoryInfo;
   workspaceData?: DemoVisualizerData | null;
+  workspaceState?: RepositoryWorkspaceState | null;
   isLoading: boolean;
+  onBaseCompareCommitSelect: (commitHash: string) => void;
+  onCommitSelect: (commitHash: string) => void;
+  onCompareCommitSelect: (commitHash: string) => void;
+  onMetadataFileChange: (fileName: "root.json" | "targets.json") => void;
+  onPolicyQueryChange: (field: "branch" | "changedPath", value: string) => void;
+  onPolicyQueryRun: () => Promise<{
+    matchedBranch: string;
+    matchedRule: string;
+    requiredApprovals: number;
+    authorizedUsers: string[];
+  } | null>;
   onReload: () => void;
   onDisconnect: () => void;
 }

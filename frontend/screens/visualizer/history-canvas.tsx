@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
-import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
-import type {
-  HistorySortField,
-  HistoryTimelineCommit,
-} from "@/screens/visualizer/history.types";
+import type { PolicyGraphCanvasVariant } from "@/screens/visualizer/policy-graph.types";
+import type { HistorySortField, HistoryTimelineCommit } from "@/screens/visualizer/history.types";
 import { PolicyGraphCanvas } from "@/screens/visualizer/policy-graph-canvas";
 
 interface WorkspaceHistoryCanvasProps {
   commits: HistoryTimelineCommit[];
   activeCommitId: string | null;
+  graphVariantsByCommit?: Record<string, PolicyGraphCanvasVariant>;
   zoom: number;
   searchQuery?: string;
 }
@@ -34,40 +31,6 @@ function formatHistoryDate(date: string) {
   }).format(new Date(date));
 }
 
-export function getHistoryTimelineCommits(
-  workspaceData?: DemoVisualizerData | null,
-): HistoryTimelineCommit[] {
-  const historyData =
-    workspaceData?.workspaceDetails.history ??
-    demoVisualizerData.workspaceDetails.history;
-
-  return historyData.commits.map((commit) => ({
-    id: commit.hash,
-    hash: commit.hash,
-    message: commit.message,
-    author: commit.author,
-    authorLabel: commit.authorLabel,
-    date: commit.date,
-  }));
-}
-
-export function getDefaultHistorySortState(
-  workspaceData?: DemoVisualizerData | null,
-) {
-  const historyData =
-    workspaceData?.workspaceDetails.history ??
-    demoVisualizerData.workspaceDetails.history;
-  const selectedSort = historyData.selectedSort ?? historyData.sortOptions[0] ?? "date";
-
-  return {
-    sortField: selectedSort === "author" ? "author" : "date",
-    isAscending: selectedSort === "oldest",
-  } satisfies {
-    sortField: HistorySortField;
-    isAscending: boolean;
-  };
-}
-
 export function sortHistoryTimelineCommits(
   commits: HistoryTimelineCommit[],
   sortField: HistorySortField,
@@ -85,16 +48,6 @@ export function sortHistoryTimelineCommits(
   );
 
   return isAscending ? sortedCommits : sortedCommits.reverse();
-}
-
-export function getDefaultHistoryCommitId(
-  workspaceData?: DemoVisualizerData | null,
-) {
-  return (
-    workspaceData?.workspaceDetails.history.selectedCommitHash ??
-    demoVisualizerData.workspaceDetails.history.selectedCommitHash ??
-    null
-  );
 }
 
 export function WorkspaceHistoryTimelineStrip({
@@ -157,6 +110,7 @@ export function WorkspaceHistoryTimelineStrip({
 export function WorkspaceHistoryCanvas({
   commits,
   activeCommitId,
+  graphVariantsByCommit,
   zoom,
   searchQuery,
 }: WorkspaceHistoryCanvasProps) {
@@ -207,6 +161,7 @@ export function WorkspaceHistoryCanvas({
                 }}
                 allowOverflowDrag
                 variant={{
+                  ...(graphVariantsByCommit?.[commit.hash] ?? {}),
                   repositoryLabel: commit.hash.slice(0, 7),
                   repositoryLabelColor:
                     commit.id === activeCommitId

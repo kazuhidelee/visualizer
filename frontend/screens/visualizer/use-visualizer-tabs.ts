@@ -92,7 +92,7 @@ export function useVisualizerTabs({
 
   const compareTabLabel = useMemo(
     () =>
-      `Compare ${selectedBaseVersion.split(" • ")[0]} vs ${selectedCompareVersion.split(" • ")[0]}`,
+      `Compare ${selectedBaseVersion.slice(0, 7)} vs ${selectedCompareVersion.slice(0, 7)}`,
     [selectedBaseVersion, selectedCompareVersion],
   );
 

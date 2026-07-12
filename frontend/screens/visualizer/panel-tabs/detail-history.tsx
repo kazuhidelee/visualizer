@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import Image from "next/image";
 import ascendingIcon from "@/assets/ascending.png";
 import discendingIcon from "@/assets/discending.png";
-import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
 import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
+import type { RepositoryWorkspaceState } from "@/lib/types";
 import { useWorkspaceHistory } from "@/hooks/visualizer/use-workspace-history";
 import {
   CommitHistoryItem,
@@ -26,11 +26,14 @@ interface DetailHistoryCommit {
 }
 
 interface DetailPanelHistoryProps {
+  mode: "demo" | "repository";
   workspaceData?: DemoVisualizerData | null;
+  workspaceState?: RepositoryWorkspaceState | null;
   commits: DetailHistoryCommit[];
   selectedCommitHash?: string | null;
   onSelectedCommitChange?: (commitHash: string) => void;
   searchQuery?: string;
+  sortOptions: HistorySortField[];
   selectedSort: HistorySortField;
   isAscending: boolean;
   onSortChange: (sortField: HistorySortField) => void;
@@ -38,26 +41,19 @@ interface DetailPanelHistoryProps {
 }
 
 export function DetailPanelHistory({
+  mode,
   workspaceData,
+  workspaceState,
   commits,
   selectedCommitHash,
   onSelectedCommitChange,
   searchQuery = "",
+  sortOptions,
   selectedSort,
   isAscending,
   onSortChange,
   onSortDirectionToggle,
 }: DetailPanelHistoryProps) {
-  const historyData =
-    workspaceData?.workspaceDetails.history ??
-    demoVisualizerData.workspaceDetails.history;
-  const sortOptions = Array.from(
-    new Set(
-      historyData.sortOptions.map((option) =>
-        option === "author" ? "author" : "date",
-      ),
-    ),
-  ) as HistorySortField[];
   const {
     commitListRef,
     commitsPerPage,
@@ -69,7 +65,7 @@ export function DetailPanelHistory({
     totalPages,
     touchedCommitId,
     visibleCommits,
-  } = useWorkspaceHistory(commits, selectedCommitHash ?? historyData?.selectedCommitHash);
+  } = useWorkspaceHistory(commits, selectedCommitHash ?? (mode === "demo" ? workspaceData?.workspaceDetails.history.selectedCommitHash : undefined));
 
   useEffect(() => {
     if (!selectedCommitHash) return;
@@ -95,6 +91,11 @@ export function DetailPanelHistory({
 
   return (
     <div className="flex h-full flex-col px-1 pb-4">
+      {mode === "repository" && (workspaceState?.errors.repository || commits.length === 0) ? (
+        <div className="px-4 pb-4 pt-2 text-[12px] text-(--dark-gray)">
+          {workspaceState?.errors.repository || "No policy commits found for this repository."}
+        </div>
+      ) : null}
       <div className="flex items-center justify-end gap-2 px-4 pb-3 pt-2">
         <SelectField
           options={sortOptions.map((option) => ({
@@ -124,6 +125,11 @@ export function DetailPanelHistory({
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <div ref={commitListRef} className="min-h-0 flex-1 overflow-hidden">
+          {visibleCommits.length === 0 ? (
+            <div className="px-4 py-6 text-[12px] text-(--dark-gray)">
+              Nothing to show yet.
+            </div>
+          ) : null}
           {visibleCommits.map((commit) => (
             <CommitHistoryItem
               key={commit.id}

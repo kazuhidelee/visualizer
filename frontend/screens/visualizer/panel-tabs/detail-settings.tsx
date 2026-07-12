@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
 import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
+import type { WorkspaceMode } from "@/lib/types";
 import {
   CheckboxRow,
   DetailActionButton,
@@ -14,14 +15,25 @@ import {
 } from "@/components/visualizer/detail/workspace-detail-primitives";
 
 interface DetailPanelSettingsProps {
+  mode: WorkspaceMode;
   workspaceData?: DemoVisualizerData | null;
   searchQuery?: string;
 }
 
 export function DetailPanelSettings({
+  mode,
   workspaceData,
   searchQuery,
 }: DetailPanelSettingsProps) {
+  if (mode === "repository") {
+    return (
+      <div className="space-y-2 px-5 pb-8 pt-4 text-[12px] text-(--dark-gray)">
+        Settings stay local UI state and are not tied to demo data anymore.
+        Wiring them into the real graph renderer can land when the graph itself becomes repository-backed.
+      </div>
+    );
+  }
+
   const settingsData =
     workspaceData?.workspaceDetails.settings ??
     demoVisualizerData.workspaceDetails.settings;

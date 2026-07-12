@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import clipIcon from "@/assets/clip.png"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { RepositoryInfo } from "@/lib/repository-handler"
+import type { RepositoryInfo } from "@/lib/types"
 
 interface RepositorySelectorProps {
   onRepositorySelect: (info: RepositoryInfo) => void

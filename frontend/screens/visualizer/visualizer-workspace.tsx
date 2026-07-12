@@ -34,9 +34,11 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
     activeGraphTab,
     activeGraphTabId,
     activeHistoryCommitId,
+    activePolicyGraph,
     activeLabel,
     activePanel,
     activePanelIcon,
+    compareOptions,
     baseCompareGraph,
     comparisonResult,
     compareGraph,
@@ -47,6 +49,7 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
     footerLeftWidthPx,
     graphSearchQuery,
     graphTabs,
+    graphVariantsByCommit,
     graphViewportRef,
     graphViewportSize,
     graphZoom,
@@ -181,14 +184,20 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
               />
               <ScrollArea className="min-h-0 flex-1 bg-white">
                 <DetailContent
+                  mode={props.mode}
                   activePanel={activePanel}
                   repository={props.repository}
                   workspaceData={props.workspaceData}
+                  workspaceState={props.workspaceState}
+                  onCommitSelect={props.onCommitSelect}
+                  onMetadataFileChange={props.onMetadataFileChange}
+                  onPolicyQueryChange={props.onPolicyQueryChange}
+                  onPolicyQueryRun={props.onPolicyQueryRun}
                   onRegenerate={handleGenerateGraph}
                   isLoading={props.isLoading}
                   historyCommits={detailHistoryCommits}
                   selectedHistoryCommitHash={activeHistoryCommitId}
-                  onHistoryCommitSelect={setActiveHistoryCommitId}
+                  onHistoryCommitSelect={props.onCommitSelect}
                   searchQuery={detailSearchQuery}
                   selectedHistorySort={historySortField}
                   isHistorySortAscending={isHistorySortAscending}
@@ -196,19 +205,30 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
                   onHistorySortDirectionToggle={() =>
                     setIsHistorySortAscending((current) => !current)
                   }
+                  compareVersionOptions={compareOptions}
                   selectedBaseVersion={selectedBaseVersion}
                   selectedCompareVersion={selectedCompareVersion}
                   comparisonResult={comparisonResult}
                   hasCompared={hasCompared}
                   onBaseVersionChange={(value) => {
                     setSelectedBaseVersion(value);
+                    if (props.mode === "repository") {
+                      props.onBaseCompareCommitSelect(value);
+                    }
                     setHasCompared(false);
                   }}
                   onCompareVersionChange={(value) => {
                     setSelectedCompareVersion(value);
+                    if (props.mode === "repository") {
+                      props.onCompareCommitSelect(value);
+                    }
                     setHasCompared(false);
                   }}
                   onSwapVersions={() => {
+                    if (props.mode === "repository") {
+                      props.onBaseCompareCommitSelect(selectedCompareVersion);
+                      props.onCompareCommitSelect(selectedBaseVersion);
+                    }
                     setSelectedBaseVersion(selectedCompareVersion);
                     setSelectedCompareVersion(selectedBaseVersion);
                     setHasCompared(false);
@@ -242,7 +262,7 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
                 <HistoryTimelineStrip
                   commits={historyCommits}
                   activeCommitId={activeHistoryCommitId}
-                  onSelect={setActiveHistoryCommitId}
+                  onSelect={props.onCommitSelect}
                 />
               ) : null}
               {isHistoryPanel ? (
@@ -321,6 +341,7 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
                   <HistoryCanvas
                     commits={historyCommits}
                     activeCommitId={activeHistoryCommitId}
+                    graphVariantsByCommit={graphVariantsByCommit}
                     zoom={graphZoom}
                     searchQuery={graphSearchQuery}
                   />
@@ -370,6 +391,7 @@ export default function VisualizerWorkspace(props: VisualizerWorkspaceProps) {
                                   onDelete={() =>
                                     handleDeleteGraphInstance(graph.id)
                                   }
+                                  variant={props.mode === "repository" ? activePolicyGraph : undefined}
                                 />
                               </div>
                             ))

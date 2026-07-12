@@ -12,9 +12,11 @@ import { useVisualizerLayout } from "@/screens/visualizer/use-visualizer-layout"
 import { useVisualizerTabs } from "@/screens/visualizer/use-visualizer-tabs";
 
 export function useVisualizerWorkspace({
+  mode,
   workspaceData,
+  workspaceState,
   onReload,
-}: Pick<VisualizerWorkspaceProps, "workspaceData" | "onReload">) {
+}: Pick<VisualizerWorkspaceProps, "mode" | "workspaceData" | "workspaceState" | "onReload">) {
   const [activePanel, setActivePanel] = useState<WorkspacePanelId>("graph-source");
   const [detailSearchQuery, setDetailSearchQuery] = useState("");
   const [graphZoom, setGraphZoom] = useState(0.75);
@@ -39,10 +41,13 @@ export function useVisualizerWorkspace({
   } = useVisualizerLayout();
   const {
     activeHistoryCommitId,
+    activePolicyGraph,
+    compareOptions,
     baseCompareGraph,
     comparisonResult,
     compareGraph,
     detailHistoryCommits,
+    graphVariantsByCommit,
     hasCompared,
     historyCommits,
     historySortField,
@@ -57,7 +62,7 @@ export function useVisualizerWorkspace({
     setIsHistoryStripCollapsed,
     setSelectedBaseVersion,
     setSelectedCompareVersion,
-  } = useVisualizerHistoryCompare(workspaceData);
+  } = useVisualizerHistoryCompare(mode, workspaceData, workspaceState);
   const { graphViewportRef, graphViewportSize } = useGraphViewport(graphZoom);
   const {
     activeGraphTab,
@@ -104,11 +109,14 @@ export function useVisualizerWorkspace({
     activeLabel,
     activePanel,
     activePanelIcon,
+    activePolicyGraph,
+    compareOptions,
     baseCompareGraph,
     comparisonResult,
     compareGraph,
     defaultLayout,
     detailHistoryCommits,
+    graphVariantsByCommit,
     detailPanelRef,
     detailPanelWidth,
     detailSearchQuery,

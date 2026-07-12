@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
 import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
-import type { RepositoryInfo } from "@/lib/repository-handler";
+import type {
+  RepositoryInfo,
+  RepositoryWorkspaceState,
+  WorkspaceMode,
+} from "@/lib/types";
 import {
   DetailPanelCompare,
   DetailPanelGraphSource,
@@ -12,14 +16,26 @@ import {
   DetailPanelPolicyQuery,
   DetailPanelSettings,
 } from "@/screens/visualizer/panel-tabs/detail-panels";
+import type { SelectOption } from "@/components/visualizer/detail/workspace-detail-primitives";
 import type { VisualizerComparisonResult } from "@/screens/visualizer/compare.utils";
 import type { HistorySortField } from "@/screens/visualizer/history.types";
 import type { WorkspacePanelId } from "@/screens/visualizer/visualizer.types";
 
 interface WorkspaceDetailContentProps {
+  mode: WorkspaceMode;
   activePanel: WorkspacePanelId;
   repository: RepositoryInfo;
   workspaceData?: DemoVisualizerData | null;
+  workspaceState?: RepositoryWorkspaceState | null;
+  onCommitSelect: (commitHash: string) => void;
+  onMetadataFileChange: (fileName: "root.json" | "targets.json") => void;
+  onPolicyQueryChange: (field: "branch" | "changedPath", value: string) => void;
+  onPolicyQueryRun: () => Promise<{
+    matchedBranch: string;
+    matchedRule: string;
+    requiredApprovals: number;
+    authorizedUsers: string[];
+  } | null>;
   onRegenerate: () => void;
   isLoading?: boolean;
   historyCommits: Array<{
@@ -37,6 +53,7 @@ interface WorkspaceDetailContentProps {
   isHistorySortAscending: boolean;
   onHistorySortChange: (sortField: HistorySortField) => void;
   onHistorySortDirectionToggle: () => void;
+  compareVersionOptions: SelectOption[];
   selectedBaseVersion: string;
   selectedCompareVersion: string;
   comparisonResult: VisualizerComparisonResult;
@@ -48,9 +65,15 @@ interface WorkspaceDetailContentProps {
 }
 
 export function WorkspaceDetailContent({
+  mode,
   activePanel,
   repository,
   workspaceData,
+  workspaceState,
+  onCommitSelect,
+  onMetadataFileChange,
+  onPolicyQueryChange,
+  onPolicyQueryRun,
   onRegenerate,
   isLoading = false,
   historyCommits,
@@ -61,6 +84,7 @@ export function WorkspaceDetailContent({
   isHistorySortAscending,
   onHistorySortChange,
   onHistorySortDirectionToggle,
+  compareVersionOptions,
   selectedBaseVersion,
   selectedCompareVersion,
   comparisonResult,
@@ -71,8 +95,21 @@ export function WorkspaceDetailContent({
   onCompare,
 }: WorkspaceDetailContentProps) {
   const policyQueryDefaults =
-    workspaceData?.workspaceDetails.policyQuery ??
-    demoVisualizerData.workspaceDetails.policyQuery;
+    mode === "demo"
+      ? workspaceData?.workspaceDetails.policyQuery ??
+        demoVisualizerData.workspaceDetails.policyQuery
+      : {
+          branchOptions: [workspaceState?.policyQuery.branch || "main"],
+          selectedBranch: workspaceState?.policyQuery.branch || "main",
+          changedPathOptions: [workspaceState?.policyQuery.changedPath || "/"],
+          selectedChangedPath: workspaceState?.policyQuery.changedPath || "/",
+          queryResult: {
+            matchedBranch: workspaceState?.policyQuery.branch || "main",
+            matchedRule: "",
+            requiredApprovals: 0,
+          },
+          authorizedUsers: [] as string[],
+        };
   const [selectedBranch, setSelectedBranch] = useState(
     policyQueryDefaults.selectedBranch ?? policyQueryDefaults.branchOptions[0],
   );
@@ -82,18 +119,52 @@ export function WorkspaceDetailContent({
   );
   const [showPolicyQueryResults, setShowPolicyQueryResults] = useState(false);
   const [policyQueryResultState, setPolicyQueryResultState] = useState({
-    matchedBranch: policyQueryDefaults.queryResult.matchedBranch,
-    matchedRule: policyQueryDefaults.queryResult.matchedRule,
-    requiredApprovals: policyQueryDefaults.queryResult.requiredApprovals,
-    authorizedUsers: policyQueryDefaults.authorizedUsers,
+    matchedBranch:
+      workspaceState?.policyQuery.result?.matchedBranch ??
+      policyQueryDefaults.queryResult.matchedBranch,
+    matchedRule:
+      workspaceState?.policyQuery.result?.matchedRule ??
+      policyQueryDefaults.queryResult.matchedRule,
+    requiredApprovals:
+      workspaceState?.policyQuery.result?.requiredApprovals ??
+      policyQueryDefaults.queryResult.requiredApprovals,
+    authorizedUsers:
+      workspaceState?.policyQuery.result?.authorizedUsers ??
+      policyQueryDefaults.authorizedUsers,
   });
+
+  useEffect(() => {
+    setSelectedBranch(policyQueryDefaults.selectedBranch ?? policyQueryDefaults.branchOptions[0] ?? "main");
+    setSelectedChangedPath(
+      policyQueryDefaults.selectedChangedPath ?? policyQueryDefaults.changedPathOptions[0] ?? "",
+    );
+    setPolicyQueryResultState({
+      matchedBranch:
+        workspaceState?.policyQuery.result?.matchedBranch ??
+        policyQueryDefaults.queryResult.matchedBranch,
+      matchedRule:
+        workspaceState?.policyQuery.result?.matchedRule ??
+        policyQueryDefaults.queryResult.matchedRule,
+      requiredApprovals:
+        workspaceState?.policyQuery.result?.requiredApprovals ??
+        policyQueryDefaults.queryResult.requiredApprovals,
+      authorizedUsers:
+        workspaceState?.policyQuery.result?.authorizedUsers ??
+        policyQueryDefaults.authorizedUsers,
+    });
+    setShowPolicyQueryResults(Boolean(workspaceState?.policyQuery.result));
+  }, [policyQueryDefaults, workspaceState]);
 
   switch (activePanel) {
     case "graph-source":
       return (
         <DetailPanelGraphSource
+          mode={mode}
           repository={repository}
           workspaceData={workspaceData}
+          workspaceState={workspaceState}
+          onCommitSelect={onCommitSelect}
+          onMetadataFileChange={onMetadataFileChange}
           onRegenerate={onRegenerate}
           isLoading={isLoading}
           searchQuery={searchQuery}
@@ -102,7 +173,9 @@ export function WorkspaceDetailContent({
     case "policy-query":
       return (
         <DetailPanelPolicyQuery
+          mode={mode}
           workspaceData={workspaceData}
+          workspaceState={workspaceState}
           searchQuery={searchQuery}
           selectedBranch={selectedBranch}
           selectedChangedPath={selectedChangedPath}
@@ -111,12 +184,26 @@ export function WorkspaceDetailContent({
           onBranchChange={(value) => {
             setSelectedBranch(value);
             setShowPolicyQueryResults(false);
+            if (mode === "repository") {
+              onPolicyQueryChange("branch", value);
+            }
           }}
           onChangedPathChange={(value) => {
             setSelectedChangedPath(value);
             setShowPolicyQueryResults(false);
+            if (mode === "repository") {
+              onPolicyQueryChange("changedPath", value);
+            }
           }}
-          onQuery={(result) => {
+          onQuery={async (result) => {
+            if (mode === "repository") {
+              const nextResult = await onPolicyQueryRun();
+              if (!nextResult) return;
+              setPolicyQueryResultState(nextResult);
+              setShowPolicyQueryResults(true);
+              return;
+            }
+
             setPolicyQueryResultState(result);
             setShowPolicyQueryResults(true);
           }}
@@ -125,11 +212,27 @@ export function WorkspaceDetailContent({
     case "history":
       return (
         <DetailPanelHistory
+          mode={mode}
           workspaceData={workspaceData}
+          workspaceState={workspaceState}
           commits={historyCommits}
           selectedCommitHash={selectedHistoryCommitHash}
           onSelectedCommitChange={onHistoryCommitSelect}
           searchQuery={searchQuery}
+          sortOptions={
+            mode === "demo"
+              ? Array.from(
+                  new Set(
+                    (
+                      workspaceData?.workspaceDetails.history ??
+                      demoVisualizerData.workspaceDetails.history
+                    ).sortOptions.map((option) =>
+                      option === "author" ? "author" : "date",
+                    ),
+                  ),
+                ) as HistorySortField[]
+              : ["date", "author"]
+          }
           selectedSort={selectedHistorySort}
           isAscending={isHistorySortAscending}
           onSortChange={onHistorySortChange}
@@ -139,8 +242,11 @@ export function WorkspaceDetailContent({
     case "compare":
       return (
         <DetailPanelCompare
+          mode={mode}
           workspaceData={workspaceData}
+          workspaceState={workspaceState}
           searchQuery={searchQuery}
+          versionOptions={compareVersionOptions}
           selectedBaseVersion={selectedBaseVersion}
           selectedCompareVersion={selectedCompareVersion}
           comparisonResult={comparisonResult}
@@ -152,9 +258,22 @@ export function WorkspaceDetailContent({
         />
       );
     case "metadata":
-      return <DetailPanelMetadata workspaceData={workspaceData} searchQuery={searchQuery} />;
+      return (
+        <DetailPanelMetadata
+          mode={mode}
+          workspaceData={workspaceData}
+          workspaceState={workspaceState}
+          searchQuery={searchQuery}
+        />
+      );
     case "settings":
-      return <DetailPanelSettings workspaceData={workspaceData} searchQuery={searchQuery} />;
+      return (
+        <DetailPanelSettings
+          mode={mode}
+          workspaceData={workspaceData}
+          searchQuery={searchQuery}
+        />
+      );
     default:
       return null;
   }

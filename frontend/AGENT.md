@@ -163,7 +163,7 @@ Important note:
 
 - Repository selection flows:
   - `RepositorySelector` -> `useRepositorySession`
-  - `useRepositorySession` -> `RepositoryHandler`
+  - `useRepositorySession` -> `lib/api.ts`
   - active repository/demo payload -> `VisualizerWorkspace`
 - Visualizer flows:
   - `VisualizerWorkspace` -> `DetailContent`, graph canvases, bottom bar
@@ -172,9 +172,8 @@ Important note:
 
 ### API interaction patterns
 
-- Repository interaction is abstracted behind `lib/repository-handler.ts`.
+- Repository interaction is handled by plain helpers in `lib/api.ts`.
 - Demo/mock behavior is provided through:
-  - `lib/mock-api.ts`
   - `lib/demo-visualizer-fixture.ts`
 - Repository connection loading/error handling is currently local-state driven:
   - async handlers set inline `isLoading` / `error` state in `use-repository-session.ts`
@@ -188,7 +187,7 @@ Important note:
 - Start by checking:
   - `next.config.mjs`
   - `app/`
-  - `lib/repository-handler.ts`
+  - `lib/api.ts`
 - Do not assume there is an existing `.env` contract unless you confirm it first.
 
 ### Type organization

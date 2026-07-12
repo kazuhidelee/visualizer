@@ -4,8 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import emptyFileIcon from "@/assets/empty_file.png";
 import swapVertIcon from "@/assets/swap_vert.png";
-import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
 import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
+import type { RepositoryWorkspaceState } from "@/lib/types";
 import {
   DetailActionButton,
   PanelSection,
@@ -14,11 +14,15 @@ import {
   SelectField,
   SummaryMetricGrid,
 } from "@/components/visualizer/detail/workspace-detail-primitives";
+import type { SelectOption } from "@/components/visualizer/detail/workspace-detail-primitives";
 import type { VisualizerComparisonResult } from "@/screens/visualizer/compare.utils";
 
 interface DetailPanelCompareProps {
+  mode: "demo" | "repository";
   workspaceData?: DemoVisualizerData | null;
+  workspaceState?: RepositoryWorkspaceState | null;
   searchQuery?: string;
+  versionOptions: SelectOption[];
   selectedBaseVersion: string;
   selectedCompareVersion: string;
   comparisonResult: VisualizerComparisonResult;
@@ -30,8 +34,10 @@ interface DetailPanelCompareProps {
 }
 
 export function DetailPanelCompare({
-  workspaceData,
+  mode,
+  workspaceState,
   searchQuery,
+  versionOptions,
   selectedBaseVersion,
   selectedCompareVersion,
   comparisonResult,
@@ -42,17 +48,16 @@ export function DetailPanelCompare({
   onCompare,
 }: DetailPanelCompareProps) {
   const [isComparing, setIsComparing] = useState(false);
-  const compareData =
-    workspaceData?.workspaceDetails.compare ??
-    demoVisualizerData.workspaceDetails.compare;
-  const baseOptions = compareData.baseVersionOptions;
-  const compareOptions = compareData.compareVersionOptions;
+  const baseOptions = versionOptions;
+  const compareOptions = versionOptions;
+  const isCompareSnapshotLoading =
+    mode === "repository" && workspaceState?.loading.compareSnapshot;
 
   return (
     <div className="space-y-2 px-5 pb-8">
       <PanelSection label="Base Version" className="pb-2" searchQuery={searchQuery}>
         <SelectField
-          options={baseOptions.map((label) => ({ label, icon: emptyFileIcon }))}
+          options={baseOptions.map((option) => ({ ...option, icon: emptyFileIcon }))}
           selectedLabel={selectedBaseVersion}
           onChange={onBaseVersionChange}
           fullWidth
@@ -73,7 +78,7 @@ export function DetailPanelCompare({
       </div>
       <PanelSection label="Compare Version" className="pt-2" searchQuery={searchQuery}>
         <SelectField
-          options={compareOptions.map((label) => ({ label, icon: emptyFileIcon }))}
+          options={compareOptions.map((option) => ({ ...option, icon: emptyFileIcon }))}
           selectedLabel={selectedCompareVersion}
           onChange={onCompareVersionChange}
           fullWidth
@@ -82,7 +87,7 @@ export function DetailPanelCompare({
       <div className="pl-2 pt-2">
         <DetailActionButton
           label="Compare"
-          loading={isComparing}
+          loading={isComparing || Boolean(isCompareSnapshotLoading)}
           onClick={() => {
             setIsComparing(true);
             window.requestAnimationFrame(() => {
@@ -92,20 +97,33 @@ export function DetailPanelCompare({
           }}
         />
       </div>
+      {mode === "repository" && isCompareSnapshotLoading ? (
+        <div className="pl-2 text-[12px] text-(--dark-gray)">
+          Loading selected compare snapshots...
+        </div>
+      ) : null}
       {hasCompared ? (
         <section className="space-y-4 py-4">
-          <SectionBulletLabel label="Changed metadata" searchQuery={searchQuery} />
-          <div className="space-y-2 pl-4 text-[12px]">
-            {comparisonResult.changedMetadata.length > 0 ? (
-              comparisonResult.changedMetadata.map((item) => (
-                <div key={item} className="text-(--approve-color)">
-                  ✓ <SearchHighlightText text={item} query={searchQuery} />
-                </div>
-              ))
-            ) : (
-              <div className="text-(--dark-gray)">— No metadata changes</div>
-            )}
-          </div>
+          {mode === "demo" ? (
+            <>
+              <SectionBulletLabel label="Changed metadata" searchQuery={searchQuery} />
+              <div className="space-y-2 pl-4 text-[12px]">
+                {comparisonResult.changedMetadata.length > 0 ? (
+                  comparisonResult.changedMetadata.map((item) => (
+                    <div key={item} className="text-(--approve-color)">
+                      ✓ <SearchHighlightText text={item} query={searchQuery} />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-(--dark-gray)">— No metadata changes</div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="pl-4 text-[12px] text-(--dark-gray)">
+              Compare summary is limited to rule, approval, and principal differences we can derive directly from loaded snapshots.
+            </div>
+          )}
           <SummaryMetricGrid items={comparisonResult.stats} searchQuery={searchQuery} />
         </section>
       ) : null}

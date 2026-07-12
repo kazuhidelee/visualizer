@@ -13,16 +13,14 @@ Ensure that you have [Docker] installed on your computer before proceeding.
 ```bash
 docker compose up --build
 # App at http://localhost:3000
+# Backend at http://localhost:8080
 ```
 
-### Backend
+If you build just the backend image directly, use the backend directory as the
+build context:
 
 ```bash
-docker build -t visualizer-go-backend -f go-backend/Dockerfile .
-# Option A: keep default internal 8080 and map to host 5000 to match frontend defaults
-docker run --rm -p 5000:8080 visualizer-go-backend
-# Option B: run on port 5000 inside the container (uses PORT)
-docker run --rm -e PORT=5000 -p 5000:5000 visualizer-go-backend
+docker build -t visualizer-go-backend ./go-backend
 ```
 
 ## Manual Setup
@@ -32,14 +30,14 @@ proceeding.
 
 ### Backend
 
-First, build start the backend:
+First, start the backend:
 
-Go (Gin) on port 5000:
+Go (Gin) on port 8080:
 
 ```bash
 cd go-backend
 go mod download
-PORT=5000 go run cmd/server/main.go
+go run cmd/server/main.go
 ```
 
 ### Frontend
@@ -49,6 +47,13 @@ Next, start the frontend:
 ```bash
 cd frontend
 npm install
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080 npm run dev
+```
+
+Or export it once:
+
+```bash
+export NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 npm run dev                # http://localhost:3000
 ```
 

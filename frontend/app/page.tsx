@@ -8,12 +8,20 @@ import { useRepositorySession } from "@/hooks/use-repository-session"
 
 export default function Home() {
   const {
+    mode,
     isLoading,
     error,
     currentRepository,
-    currentRepositoryData,
+    demoWorkspaceData,
+    repositoryWorkspaceState,
     showRepositorySelector,
+    handleBaseCompareCommitSelect,
+    handleCommitSelect,
+    handleCompareCommitSelect,
     handleDisconnect,
+    handleMetadataFileChange,
+    handlePolicyQueryChange,
+    handlePolicyQueryRun,
     handleTryDemo,
     handleRepositorySelect,
     handleRepositoryRefresh,
@@ -43,9 +51,17 @@ export default function Home() {
 
           {currentRepository && !showRepositorySelector && (
             <VisualizerWorkspace
+              mode={mode}
               repository={currentRepository}
-              workspaceData={currentRepositoryData}
+              workspaceData={demoWorkspaceData}
+              workspaceState={repositoryWorkspaceState}
               isLoading={isLoading}
+              onBaseCompareCommitSelect={handleBaseCompareCommitSelect}
+              onCommitSelect={handleCommitSelect}
+              onCompareCommitSelect={handleCompareCommitSelect}
+              onMetadataFileChange={handleMetadataFileChange}
+              onPolicyQueryChange={handlePolicyQueryChange}
+              onPolicyQueryRun={handlePolicyQueryRun}
               onReload={handleRepositoryRefresh}
               onDisconnect={handleDisconnect}
             />

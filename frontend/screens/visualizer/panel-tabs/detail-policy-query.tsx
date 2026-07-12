@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import branchIcon from "@/assets/branch.png";
 import emptyFileIcon from "@/assets/empty_file.png";
 import { demoVisualizerData } from "@/lib/demo-visualizer-fixture";
-import type { DemoVisualizerData } from "@/lib/demo-visualizer.types";
+import type {
+  DemoPolicyQueryData,
+  DemoVisualizerData,
+} from "@/lib/demo-visualizer.types";
+import type { RepositoryWorkspaceState, WorkspaceMode } from "@/lib/types";
 import {
   DetailActionButton,
   PanelSection,
@@ -13,9 +17,12 @@ import {
   SelectField,
   SummaryMetricGrid,
 } from "@/components/visualizer/detail/workspace-detail-primitives";
+import { Input } from "@/components/ui/input";
 
 interface DetailPanelPolicyQueryProps {
+  mode: WorkspaceMode;
   workspaceData?: DemoVisualizerData | null;
+  workspaceState?: RepositoryWorkspaceState | null;
   searchQuery?: string;
   selectedBranch: string;
   selectedChangedPath: string;
@@ -33,11 +40,13 @@ interface DetailPanelPolicyQueryProps {
     matchedRule: string;
     requiredApprovals: number;
     authorizedUsers: string[];
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 export function DetailPanelPolicyQuery({
+  mode,
   workspaceData,
+  workspaceState,
   searchQuery,
   selectedBranch,
   selectedChangedPath,
@@ -48,46 +57,87 @@ export function DetailPanelPolicyQuery({
   onQuery,
 }: DetailPanelPolicyQueryProps) {
   const [isQuerying, setIsQuerying] = useState(false);
-  const policyQuery =
-    workspaceData?.workspaceDetails.policyQuery ??
-    demoVisualizerData.workspaceDetails.policyQuery;
+  const policyQuery: DemoPolicyQueryData | {
+    branchOptions: string[];
+    changedPathOptions: string[];
+    queryResult: {
+      matchedBranch: string;
+      matchedRule: string;
+      requiredApprovals: number;
+    };
+    authorizedUsers: string[];
+  } =
+    mode === "demo"
+      ? workspaceData?.workspaceDetails.policyQuery ??
+        demoVisualizerData.workspaceDetails.policyQuery
+      : {
+          branchOptions: [workspaceState?.policyQuery.branch || "main"],
+          changedPathOptions: [workspaceState?.policyQuery.changedPath || "/"],
+          queryResult: {
+            matchedBranch: workspaceState?.policyQuery.branch || "main",
+            matchedRule: "",
+            requiredApprovals: 0,
+          },
+          authorizedUsers: [],
+        };
   const branchOptions = policyQuery.branchOptions;
   const changedPathOptions = policyQuery.changedPathOptions;
+  const policyQueryError = workspaceState?.errors.policyQuery;
+  const isRepositoryQueryLoading =
+    mode === "repository" && workspaceState?.loading.policyQuery;
   const queryScenario = useMemo(
     () =>
-      policyQuery.queryScenarios?.find(
+      ("queryScenarios" in policyQuery ? policyQuery.queryScenarios : undefined)?.find(
         (scenario) =>
           scenario.branch === selectedBranch &&
           scenario.changedPath === selectedChangedPath,
       ),
-    [policyQuery.queryScenarios, selectedBranch, selectedChangedPath],
+    [policyQuery, selectedBranch, selectedChangedPath],
   );
 
   return (
     <div className="space-y-2 px-5 pb-8">
       <PanelSection label="Branch" searchQuery={searchQuery}>
-        <SelectField
-          options={branchOptions.map((label) => ({ label, icon: branchIcon }))}
-          selectedLabel={selectedBranch}
-          onChange={onBranchChange}
-          fullWidth
-        />
+        {mode === "repository" ? (
+          <Input
+            value={selectedBranch}
+            onChange={(event) => onBranchChange(event.target.value)}
+            placeholder="main"
+            className="h-9"
+          />
+        ) : (
+          <SelectField
+            options={branchOptions.map((label) => ({ label, icon: branchIcon }))}
+            selectedLabel={selectedBranch}
+            onChange={onBranchChange}
+            fullWidth
+          />
+        )}
       </PanelSection>
       <PanelSection label="Changed path" searchQuery={searchQuery}>
-        <SelectField
-          options={changedPathOptions.map((label) => ({ label, icon: emptyFileIcon }))}
-          selectedLabel={selectedChangedPath}
-          onChange={onChangedPathChange}
-          fullWidth
-        />
+        {mode === "repository" ? (
+          <Input
+            value={selectedChangedPath}
+            onChange={(event) => onChangedPathChange(event.target.value)}
+            placeholder="src/app.ts"
+            className="h-9"
+          />
+        ) : (
+          <SelectField
+            options={changedPathOptions.map((label) => ({ label, icon: emptyFileIcon }))}
+            selectedLabel={selectedChangedPath}
+            onChange={onChangedPathChange}
+            fullWidth
+          />
+        )}
       </PanelSection>
       <div className="pl-2 pt-2">
         <DetailActionButton
           label="Query policy"
-          loading={isQuerying}
+          loading={isQuerying || Boolean(isRepositoryQueryLoading)}
           onClick={() => {
             setIsQuerying(true);
-            window.requestAnimationFrame(() => {
+            Promise.resolve(
               onQuery({
                 matchedBranch:
                   queryScenario?.matchedBranch ??
@@ -104,12 +154,18 @@ export function DetailPanelPolicyQuery({
                 authorizedUsers:
                   queryScenario?.authorizedUsers ??
                   policyQuery.authorizedUsers,
-              });
+              }),
+            ).finally(() => {
               window.setTimeout(() => setIsQuerying(false), 250);
             });
           }}
         />
       </div>
+      {policyQueryError ? (
+        <div className="rounded-[5px] border border-(--reject-color) bg-(--reject-color-12) px-4 py-3 text-[12px] text-(--reject-color)">
+          {policyQueryError}
+        </div>
+      ) : null}
       {showResults ? (
         <>
           <PanelSection label="Query Result" className="pt-6" searchQuery={searchQuery}>

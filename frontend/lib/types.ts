@@ -6,14 +6,50 @@ export interface Commit {
   data?: JsonObject
 }
 
-export interface MetadataRequest {
-  url: string
-  commit: string
-  file: string
+export interface RepositoryInfo {
+  type: "remote" | "local"
+  path: string
+  name: string
+  branch?: string
 }
 
-export interface CommitsRequest {
-  url: string
+export interface PolicySnapshot {
+  root: JsonObject
+  targets: JsonObject
+}
+
+export interface PolicyQueryResult {
+  matchedBranch: string
+  matchedRule: string
+  requiredApprovals: number
+  authorizedUsers: string[]
+}
+
+export type WorkspaceMode = "demo" | "repository"
+
+export interface RepositoryWorkspaceState {
+  commits: Commit[]
+  selectedCommitHash: string | null
+  selectedBaseCompareCommitHash: string | null
+  selectedCompareCommitHash: string | null
+  snapshotCache: Record<string, PolicySnapshot>
+  snapshotErrors: Record<string, string>
+  activeMetadataFile: "root.json" | "targets.json"
+  loading: {
+    reload: boolean
+    selectedCommitSnapshot: boolean
+    compareSnapshot: boolean
+    policyQuery: boolean
+  }
+  errors: {
+    repository: string | null
+    policyQuery: string | null
+  }
+  policyQuery: {
+    branch: string
+    changedPath: string
+    result: PolicyQueryResult | null
+  }
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
